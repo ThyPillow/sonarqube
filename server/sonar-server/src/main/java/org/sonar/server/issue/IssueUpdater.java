@@ -28,6 +28,7 @@ import org.sonar.core.issue.IssueChangeContext;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
+import org.sonar.db.issue.IssueDto;
 import org.sonar.db.rule.RuleDefinitionDto;
 import org.sonar.server.issue.notification.IssueChangeNotification;
 import org.sonar.server.issue.ws.SearchResponseData;
@@ -52,28 +53,29 @@ public class IssueUpdater {
    * Same as {@link #saveIssue(DbSession, DefaultIssue, IssueChangeContext, String)} but populates the specified
    * {@link SearchResponseData} with the DTOs (rule and components) retrieved from DB to save the issue.
    */
-  public void saveIssue(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment,
-    SearchResponseData preloadedSearchResponseData) {
+  public SearchResponseData saveIssueAndPreloadSearchResponseData(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment) {
     Optional<RuleDefinitionDto> rule = getRuleByKey(session, issue.getRuleKey());
     ComponentDto project = dbClient.componentDao().selectOrFailByUuid(session, issue.projectUuid());
     ComponentDto component = dbClient.componentDao().selectOrFailByUuid(session, issue.componentUuid());
-    saveIssue(session, issue, context, comment, rule, project, component);
+    IssueDto issueDto = saveIssue(session, issue, context, comment, rule, project, component);
 
+    SearchResponseData preloadedSearchResponseData = new SearchResponseData(issueDto);
     rule.ifPresent(r -> preloadedSearchResponseData.setRules(singletonList(r)));
     preloadedSearchResponseData.addComponents(singleton(project));
     preloadedSearchResponseData.addComponents(singleton(component));
+    return preloadedSearchResponseData;
   }
 
-  public void saveIssue(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment) {
+  public IssueDto saveIssue(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment) {
     Optional<RuleDefinitionDto> rule = getRuleByKey(session, issue.getRuleKey());
     ComponentDto project = dbClient.componentDao().selectOrFailByUuid(session, issue.projectUuid());
     ComponentDto component = dbClient.componentDao().selectOrFailByUuid(session, issue.componentUuid());
-    saveIssue(session, issue, context, comment, rule, project, component);
+    return saveIssue(session, issue, context, comment, rule, project, component);
   }
 
-  private void saveIssue(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment,
+  private IssueDto saveIssue(DbSession session, DefaultIssue issue, IssueChangeContext context, @Nullable String comment,
     Optional<RuleDefinitionDto> rule, ComponentDto project, ComponentDto component) {
-    issueStorage.save(session, issue);
+    IssueDto issueDto = issueStorage.save(session, issue);
     notificationService.scheduleForSending(new IssueChangeNotification()
       .setIssue(issue)
       .setChangeAuthorLogin(context.login())
@@ -81,6 +83,7 @@ public class IssueUpdater {
       .setProject(project.getKey(), project.name())
       .setComponent(component)
       .setComment(comment));
+    return issueDto;
   }
 
   private Optional<RuleDefinitionDto> getRuleByKey(DbSession session, RuleKey ruleKey) {

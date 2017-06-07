@@ -119,11 +119,10 @@ public class AssignAction implements IssuesWsAction {
         checkMembership(dbSession, issueDto, user);
       }
       IssueChangeContext context = IssueChangeContext.createUser(new Date(system2.now()), userSession.getLogin());
-      SearchResponseData preloadedSearchResponseData = new SearchResponseData(issueDto);
       if (issueFieldsSetter.assign(issue, user, context)) {
-        issueUpdater.saveIssue(dbSession, issue, context, null, preloadedSearchResponseData);
+        return issueUpdater.saveIssueAndPreloadSearchResponseData(dbSession, issue, context, null);
       }
-      return preloadedSearchResponseData;
+      return new SearchResponseData(issueDto);
     }
   }
 

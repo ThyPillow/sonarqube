@@ -154,10 +154,13 @@ public class IssueUpdaterTest {
     DefaultIssue issue = issueDbTester.insertIssue(issueDto).setSeverity(MAJOR).toDefaultIssue();
     IssueChangeContext context = IssueChangeContext.createUser(new Date(), "john");
     issueFieldsSetter.setSeverity(issue, BLOCKER, context);
-    SearchResponseData preloadedSearchResponseData = new SearchResponseData(issueDto);
 
-    underTest.saveIssue(dbTester.getSession(), issue, context, null, preloadedSearchResponseData);
+    SearchResponseData preloadedSearchResponseData = underTest.saveIssueAndPreloadSearchResponseData(dbTester.getSession(), issue, context, null);
 
+    assertThat(preloadedSearchResponseData.getIssues())
+      .hasSize(1);
+    assertThat(preloadedSearchResponseData.getIssues().iterator().next())
+      .isNotSameAs(issueDto);
     assertThat(preloadedSearchResponseData.getRules())
       .extracting(RuleDefinitionDto::getKey)
       .containsOnly(rule.getKey());
@@ -175,10 +178,13 @@ public class IssueUpdaterTest {
     DefaultIssue issue = issueDbTester.insertIssue(issueDto).setSeverity(MAJOR).toDefaultIssue();
     IssueChangeContext context = IssueChangeContext.createUser(new Date(), "john");
     issueFieldsSetter.setSeverity(issue, BLOCKER, context);
-    SearchResponseData preloadedSearchResponseData = new SearchResponseData(issueDto);
 
-    underTest.saveIssue(dbTester.getSession(), issue, context, null, preloadedSearchResponseData);
+    SearchResponseData preloadedSearchResponseData = underTest.saveIssueAndPreloadSearchResponseData(dbTester.getSession(), issue, context, null);
 
+    assertThat(preloadedSearchResponseData.getIssues())
+      .hasSize(1);
+    assertThat(preloadedSearchResponseData.getIssues().iterator().next())
+      .isNotSameAs(issueDto);
     assertThat(preloadedSearchResponseData.getRules()).isNullOrEmpty();
     assertThat(preloadedSearchResponseData.getComponents())
       .extracting(ComponentDto::uuid)

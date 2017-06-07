@@ -106,11 +106,10 @@ public class SetTypeAction implements IssuesWsAction {
     userSession.checkComponentUuidPermission(ISSUE_ADMIN, issue.projectUuid());
 
     IssueChangeContext context = IssueChangeContext.createUser(new Date(), userSession.getLogin());
-    SearchResponseData preloadedSearchResponseData = new SearchResponseData(issueDto);
     if (issueFieldsSetter.setType(issue, ruleType, context)) {
-      issueUpdater.saveIssue(session, issue, context, null, preloadedSearchResponseData);
+      return issueUpdater.saveIssueAndPreloadSearchResponseData(session, issue, context, null);
     }
-    return preloadedSearchResponseData;
+    return new SearchResponseData(issueDto);
   }
 
 }
